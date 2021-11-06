@@ -3,24 +3,38 @@
     <xsl:output method="text" omit-xml-declaration="yes" />
     <xsl:param name="qty" />
     <xsl:template match="/">
-\documentclass{article}
+\documentclass[a4paper,10pt]{article}
 \usepackage{booktabs}
 \usepackage{longtable}
+\usepackage{xcolor}
+\usepackage{tabularx}
 
 \begin{document}
-    \begin{longtable}{c c c c c c}
-        \label{tab:table1}
-        \textbf{Flight ID} &amp; \textbf{Country} &amp; \textbf{Position} &amp; \textbf{Status} &amp; \textbf{Departure Airport} &amp; \textbf{Arrival Airport}\\
-        \hline
-            <xsl:for-each select="flights_data/flight">
-                <xsl:if test="not(position() > $qty)">
-                    <xsl:apply-templates select="." />
-                    \hline
-                </xsl:if>
-            </xsl:for-each>
-        \hline
-    \end{longtable}
+<xsl:if test="count(flights_data/error) > 0">
+    {
+        \large
+        <xsl:for-each select="flights_data/error">
+            \textcolor{red}{ERROR: <xsl:value-of select="." />}
+        </xsl:for-each>
+    }
+</xsl:if>
+
+<xsl:if test="count(flights_data/flight) > 0">
+\hspace{-2.4cm}
+\def\arraystretch{1.5}
+\begin{tabular}{|l p{.12\textwidth} p{.12\textwidth} p{.12\textwidth} p{.30\textwidth} p{.30\textwidth}|}
+    \textbf{Flight ID} &amp; \textbf{Country} &amp; \textbf{Position} &amp; \textbf{Status} &amp; \textbf{Departure Airport} &amp; \textbf{Arrival Airport}\\
+    \hline
+    <xsl:for-each select="flights_data/flight">
+        <xsl:if test="not(position() > $qty)">
+            <xsl:apply-templates select="." />
+        </xsl:if>
+    </xsl:for-each>
+    \hline
+\end{tabular}
+</xsl:if>
 \end{document}
+
     </xsl:template>
 
     <xsl:template name="flight" match="flight">
