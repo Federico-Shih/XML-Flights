@@ -9,7 +9,16 @@
 \usepackage{xcolor}
 \usepackage{tabularx}
 
+\definecolor{green}{RGB}{66, 186, 150}
+\definecolor{blue}{RGB}{124, 105, 239}
+
 \begin{document}
+\title{Flight Report}
+\author{XML Group 10}
+\date{\today}
+\maketitle
+\newpage
+
 <xsl:if test="count(flights_data/error) > 0">
     {
         \large
@@ -22,15 +31,23 @@
 <xsl:if test="count(flights_data/flight) > 0">
 \hspace{-2.4cm}
 \def\arraystretch{1.5}
-\begin{tabular}{|l p{.12\textwidth} p{.12\textwidth} p{.12\textwidth} p{.30\textwidth} p{.30\textwidth}|}
+\begin{tabular}{@{} l p{.12\textwidth} p{.18\textwidth} p{.12\textwidth} p{.30\textwidth} p{.30\textwidth} @{}}
+    \toprule
     \textbf{Flight ID} &amp; \textbf{Country} &amp; \textbf{Position} &amp; \textbf{Status} &amp; \textbf{Departure Airport} &amp; \textbf{Arrival Airport}\\
-    \hline
+    \midrule\midrule
     <xsl:for-each select="flights_data/flight">
-        <xsl:if test="not(position() > $qty)">
-            <xsl:apply-templates select="." />
-        </xsl:if>
+        <xsl:choose>
+            <xsl:when test="not($qty)">
+                <xsl:apply-templates select="." />
+            </xsl:when>
+            <xsl:otherwise>
+                <xsl:if test="not(position() > $qty)">
+                    <xsl:apply-templates select="." />
+                </xsl:if>
+            </xsl:otherwise>
+        </xsl:choose>
     </xsl:for-each>
-    \hline
+    \bottomrule
 \end{tabular}
 </xsl:if>
 \end{document}
@@ -38,12 +55,29 @@
     </xsl:template>
 
     <xsl:template name="flight" match="flight">
-        <xsl:value-of select="@id" />&amp;<xsl:value-of select="country" /> &amp;<xsl:call-template name="position-format"><xsl:with-param name="position" select="position" /></xsl:call-template>&amp;<xsl:value-of select="status" />&amp; <xsl:value-of select="departure_airport/name" />&amp; <xsl:value-of select="arrival_airport/name" />\\
+        <xsl:value-of select="@id" />&amp;<xsl:value-of select="country" /> &amp;<xsl:apply-templates select="position" />&amp;<xsl:apply-templates select="status" /> &amp; <xsl:value-of select="departure_airport/name" />&amp; <xsl:value-of select="arrival_airport/name" />\\
     </xsl:template>
 
-    <xsl:template name="position-format">
-        <xsl:param name="position" />
-        (<xsl:value-of select="$position/lat" />, <xsl:value-of select="$position/lng" />)
+    <xsl:template name="status" match="status">
+        <xsl:param name="status" select="normalize-space(.)" />
+        <xsl:choose>
+            <xsl:when test="$status = 'landed'">
+                \textcolor{green}{landed}
+            </xsl:when>
+            <xsl:when test="$status = 'en-route'">
+                \textcolor{blue}{en-route}
+            </xsl:when>
+            <xsl:when test="$status = 'scheduled'">
+                \textcolor{green}{scheduled}
+            </xsl:when>
+            <xsl:otherwise>
+                \textcolor{red}{<xsl:value-of select="$status" />}
+            </xsl:otherwise>
+        </xsl:choose>
+    </xsl:template>
+
+    <xsl:template name="position" match="position">
+        (<xsl:value-of select="lat" />, <xsl:value-of select="lng" />)
     </xsl:template>
 </xsl:stylesheet>
 
