@@ -23,8 +23,7 @@ declare function local:getAirport($code as element() , $is_arrival as xs:boolean
 
 <flights_data xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation= "flights_data.xsd">
 {
-for $flight in doc("flights.xml")//response/response
-order by $flight/hex
+for $flight in doc("flights.xml")/root/response/response
 return
 
 <flight>
