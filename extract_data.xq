@@ -1,26 +1,25 @@
+declare variable $airports := doc("airports.xml")/root/response/response;
+declare variable $countries := doc("countries.xml")/root/response/response;
+
 declare function local:generate_country($flag as element()) as node()*{
-    let $v := doc("countries.xml")//response/response[code/text() = $flag/text() ]
+    let $v := ($countries/.[code/text() = $flag/text() and position() = 1 ])[1]
     where not (fn:empty($v))
     return
-            <country>
+            (<country>
                 {$v/name/text()}
-            </country>
-
+            </country>)
 };
 
-declare function local:generate_airport($code as element(), $is_arrival as xs:boolean) as node()* {
-    let $v := doc("airports.xml")//response/response[iata_code/text() = $code/text()]
+declare function local:generate_airport($code as element()) as node()* {
+    let $v := ($airports/.[iata_code/text() = $code/text() and position() = 1])[1]
+    let $country := local:generate_country($v/country_code)
     where not(fn:empty($v))
-    return
-        if ($is_arrival = fn:true())
-            then <arrival_airport> {local:generate_country($v[position() = 1]/country_code), $v/name } </arrival_airport>
-            else <departure_airport> {local:generate_country($v[position() = 1]/country_code), $v/name} </departure_airport>
+    return ($country, $v/name)
 };
 
 <flights_data>
 {
-for $flight in doc("flights.xml")//response/response
-order by $flight/hex
+for $flight in doc("flights.xml")/root/response/response
 return
         <flight>
         {
@@ -47,16 +46,19 @@ return
         {
         if (fn:exists($flight/dep_iata))
             then 
-                local:generate_airport($flight/dep_iata[position()=1], fn:false())
+                <departure_airport>
+                    {local:generate_airport($flight/dep_iata)}
+                </departure_airport>
             else()
         }
         {
         if (fn:exists($flight/arr_iata))
             then
-                local:generate_airport($flight/arr_iata[position()=1], fn:true())
+                <arrival_airport>
+                    {local:generate_airport($flight/arr_iata)}
+                </arrival_airport>
             else()
         }
-
 
 
     </flight>
