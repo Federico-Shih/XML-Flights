@@ -227,13 +227,17 @@ function clear_environment {
     rm -f ./flights.xml ./airports.xml ./countries.xml
 }
 
+#### Disables user input while code is running
+
 trap cleanup EXIT
 trap hideinput CONT
 hideinput
 
-#clear_environment
-#check_environment
-#make_request
+####
+
+clear_environment
+check_environment
+make_request
 run_xquery $XQ_OUT_PATH $DBG_OUT_PATH
 run_xslt $XQ_OUT_PATH $XLST_OUT_PATH $TEX_OUT_PATH $1
 
