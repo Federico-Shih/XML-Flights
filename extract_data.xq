@@ -4,10 +4,10 @@ declare variable $COUNTRIES_FILE_PATH := "countries.xml";
 
 declare variable $MSG_MISSING_API_KEY:= "Missing api_key";
 declare variable $MSG_UNKNOWN_API_KEY := "Unknown api_key";
-declare variable $MSG_CONNECTION_TIMEOUT := "Connetion timeout";
+declare variable $MSG_CONNECTION_TIMEOUT := "Connection timeout";
 
-declare function local:isEmpty($FILE_PATH as variable) as xs:boolean {
-    return (fn:not(fn:exists(doc($FILE_PATH))))
+declare function local:isEmpty($file_path as xs:string) as xs:boolean {
+    fn:not(fn:doc-available($file_path))
 };
 
 declare function local:getCountry($code as element()) as node()? {
