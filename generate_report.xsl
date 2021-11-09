@@ -38,7 +38,7 @@
 <xsl:if test="count(flights_data/flight) > 0 and (string(number($qty)) != 'NaN' or not($qty))">
 \hspace{-2.4cm}
 \def\arraystretch{1.5}
-\begin{tabular}{@{} l p{.12\textwidth} p{.18\textwidth} p{.12\textwidth} p{.30\textwidth} p{.30\textwidth} @{}}
+\begin{tabular}{@{} l p{.12\textwidth} p{.18\textwidth} p{.18\textwidth} p{.30\textwidth} p{.30\textwidth} @{}}
     \toprule
     \textbf{Flight ID} &amp; \textbf{Country} &amp; \textbf{Position} &amp; \textbf{Status} &amp; \textbf{Departure Airport} &amp; \textbf{Arrival Airport}\\
     \midrule\midrule
@@ -69,13 +69,13 @@
         <xsl:param name="status" select="normalize-space(.)" />
         <xsl:choose>
             <xsl:when test="$status = 'landed'">
-                \textcolor{green}{landed}
+                \textcolor{green}{\textbf{landed}}
             </xsl:when>
             <xsl:when test="$status = 'en-route'">
-                \textcolor{blue}{en-route}
+                \textcolor{blue}{\textbf{en-route}}
             </xsl:when>
             <xsl:when test="$status = 'scheduled'">
-                \textcolor{green}{scheduled}
+                \textcolor{green}{\textbf{scheduled}}
             </xsl:when>
             <xsl:otherwise>
                 \textcolor{red}{<xsl:value-of select="$status" />}

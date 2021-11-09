@@ -9,26 +9,21 @@
 #
 # ERROR: Missing API key
 # CURL: (0)
-# XML: <?xml version="1.0" encoding="UTF-8"?><root><error><message>Missing api_key</message><code>wrong_params</code></error><terms>Unauthorized access is prohibited and punishable by law. 
-#      Reselling data 'As Is' without AirLabs.Co permission is strictly prohibited. 
-#      Full terms on https://airlabs.co/. 
+# XML: <?xml version="1.0" encoding="UTF-8"?><root><error><message>Missing api_key</message><code>wrong_params</code></error><terms>Unauthorized access is prohibited and punishable by law.
+#      Reselling data 'As Is' without AirLabs.Co permission is strictly prohibited.
+#      Full terms on https://airlabs.co/.
 #      Contact us info@airlabs.co</terms></root>
-# 
-# ERROR: Invalid API key 
+#
+# ERROR: Invalid API key
 # CURL: (0)
-# XML: <?xml version="1.0" encoding="UTF-8"?><root><error><message>Unknown api_key</message><code>unknown_api_key</code></error><terms>Unauthorized access is prohibited and punishable by law. 
-#      Reselling data 'As Is' without AirLabs.Co permission is strictly prohibited. 
-#      Full terms on https://airlabs.co/. 
+# XML: <?xml version="1.0" encoding="UTF-8"?><root><error><message>Unknown api_key</message><code>unknown_api_key</code></error><terms>Unauthorized access is prohibited and punishable by law.
+#      Reselling data 'As Is' without AirLabs.Co permission is strictly prohibited.
+#      Full terms on https://airlabs.co/.
 #      Contact us info@airlabs.co</terms></root>
 #
 # ERROR: Connection Timeout
 # CURL: curl: (6) Could not resolve host: airlabs.co
 # XML: Empty
-#
-# ERROR: Connection Timeout
-# CURL: curl: (6) Could not resolve host: airlabs.co
-# XML: Empty
-
 
 # UI colors in ANSI escape code
 #
@@ -46,9 +41,14 @@ TAG_CONNECTING="${COLOR_WAIT}CONNECTING${NC}"
 TAG_CONNECTED="${COLOR_SUCCESS}CONNECTED${NC}"
 TAG_DOWNLOADING="${COLOR_WAIT}DOWNLOADING${NC}"
 TAG_DOWNLOADED="${COLOR_SUCCESS}DOWNLOADED${NC}"
+TAG_EXTRACTING="${COLOR_WAIT}EXTRACTING${NC}"
+TAG_EXTRACTED="${COLOR_SUCCESS}EXTRACTED${NC}"
+TAG_GENERATING="${COLOR_WAIT}GENERATING${NC}"
+TAG_GENERATED="${COLOR_SUCCESS}GENERATED${NC}"
 
 # AirLabs API URL
 AIRLABS_URL="https://airlabs.co/api/v9/"
+AIRLABS_API_KEY=0ca508c6-95b4-48c7-a35a-702231253f9b
 
 # Dependencies package names
 XML_PACKAGE_NAME="xml-apis.jar"
@@ -74,16 +74,16 @@ COUNTRIES_OUT_PATH="countries.xml"
 #   Error messages
 function check_environment {
     if ! which java >/dev/null; then
-        printf "${TAG_ERROR}: Java not installed\n"
+        printf "${TAG_ERROR}:\tJava not installed\n"
     fi
     if ! [[ ${CLASSPATH} == *$XML_PACKAGE_NAME* ]]; then
-        printf "${TAG_ERROR}: Missing XML APIs. Package $XML_PACKAGE_NAME not found in \$CLASSPATH\n"
+        printf "${TAG_ERROR}:\tMissing XML APIs. Package $XML_PACKAGE_NAME not found in \$CLASSPATH\n"
     fi
     if ! [[ ${CLASSPATH} == *$XERCES_PACKAGE_NAME* ]]; then
-        printf "${TAG_ERROR}: Missing Xerces. Package $XERCES_PACKAGE_NAME not found in \$CLASSPATH\n"
+        printf "${TAG_ERROR}:\tMissing Xerces. Package $XERCES_PACKAGE_NAME not found in \$CLASSPATH\n"
     fi
     if ! [[ ${CLASSPATH} == *$SAXON_PACKAGE_NAME* ]]; then
-        printf "${TAG_ERROR}: Missing Saxon. Package $SAXON_PACKAGE_NAME not found in \$CLASSPATH\n"
+        printf "${TAG_ERROR}:\tMissing Saxon. Package $SAXON_PACKAGE_NAME not found in \$CLASSPATH\n"
     fi
 }
 
@@ -94,8 +94,8 @@ function check_environment {
 #   AIRLABS_URL
 #   AIRLABS_API_KEY
 # Arguments:
-#   Database name
-#   Output format ( xml | json | csv ) 
+#   Database name ( flights | countries | airports )
+#   Output format ( xml | json | csv )
 #   Output file path
 # Outputs:
 #   Creates and writes output file
@@ -120,20 +120,20 @@ function get {
 #   Creates and writes flights,
 #   countries and airports .xml files
 function make_request {
-    local result
     printf "${TAG_CONNECTING}:\tto AirLabs...\n"
 
-    curl "https://airlabs.co/api/v9/ping?api_key=${AIRLABS_API_KEY}" --silent >/dev/null
+    curl ${AIRLABS_URL}/ping?api_key=${AIRLABS_API_KEY} --silent >/dev/null
 
     if [ $? -ne 0 ]; then
-        printf "\e[1A\e[K${TAG_ERROR}:\tCannot connect to AirLabs API"
+        printf "\e[1A\e[K${TAG_ERROR}:\tCannot connect to AirLabs API\n"
+        
     else
         printf "\e[1A\e[K${TAG_CONNECTED}:\tto AirLabs\n"
+        get flights xml $FLIGHTS_OUT_PATH
+        get countries xml $COUNTRIES_OUT_PATH
+        get airports xml $AIRPORTS_OUT_PATH
     fi
 
-    get flights xml $FLIGHTS_OUT_PATH
-    get countries xml $COUNTRIES_OUT_PATH
-    get airports xml $AIRPORTS_OUT_PATH
 }
 
 # Executes XQuery query
@@ -143,7 +143,9 @@ function make_request {
 # Arguments:
 #   Output file path
 function run_xquery {
-    java net.sf.saxon.Query extract_data.xq >$1
+    printf "${TAG_EXTRACTING}:\tflights data\n"
+    java net.sf.saxon.Query extract_data.xq -TP:$2 >$1
+    printf "\e[1A\e[K${TAG_EXTRACTED}:\tflights data\n"
 }
 
 # Executes XSLT transformation
@@ -155,5 +157,18 @@ function run_xquery {
 #   Template file path
 #   Output file path
 function run_xslt {
-    java net.sf.saxon.Transform -s:$1 -xsl:$2 -o:$3
+    printf "${TAG_GENERATING}:\t.tex file\n"
+    java net.sf.saxon.Transform -s:$1 -xsl:$2 -o:$3 qty=$4 
+    printf "\e[1A\e[K${TAG_GENERATED}:\t.tex file\n"
 }
+
+function clear_environment {
+    rm -f ./flights.xml ./airports.xml ./countries.xml
+}
+
+clear_environment
+check_environment
+make_request
+run_xquery flight_data.xml debug.html
+run_xslt flight_data.xml generate_report.xsl report.tex $1
+# pdflatex report.tex > /dev/null
