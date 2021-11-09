@@ -20,15 +20,22 @@
 \newpage
 
 <xsl:if test="count(flights_data/error) > 0">
-    {
-        \large
-        <xsl:for-each select="flights_data/error">
-            \textcolor{red}{ERROR: <xsl:value-of select="." />}
-        </xsl:for-each>
-    }
+{
+    \large
+    <xsl:for-each select="flights_data/error">
+        \textcolor{red}{ERROR: <xsl:value-of select="." />}
+    </xsl:for-each>
+}
 </xsl:if>
 
-<xsl:if test="count(flights_data/flight) > 0">
+<xsl:if test="(string(number($qty)) = 'NaN')">
+{
+    \large
+    \textcolor{red}{ERROR: qty NOT A NUMBER}
+}
+</xsl:if>
+
+<xsl:if test="count(flights_data/flight) > 0 and string(number($qty)) != 'NaN'">
 \hspace{-2.4cm}
 \def\arraystretch{1.5}
 \begin{tabular}{@{} l p{.12\textwidth} p{.18\textwidth} p{.12\textwidth} p{.30\textwidth} p{.30\textwidth} @{}}
