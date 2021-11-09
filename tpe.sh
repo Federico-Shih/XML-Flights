@@ -29,10 +29,12 @@
 #
 # Link:
 #    https://en.wikipedia.org/wiki/ANSI_escape_code
-COLOR_ERROR='\033[0;31m'   # (Red)
-COLOR_SUCCESS='\033[0;32m' # (Green)
-COLOR_WAIT='\033[0;34m'    # (Blue)
-NC='\033[0m'               # (No Color)
+COLOR_ERROR='\033[1m\033[31m'       # (Red)
+COLOR_SUCCESS='\033[1m\033[32m'     # (Green)
+COLOR_WAIT='\033[1m\033[34m'        # (Blue)
+COLOR_TASK="\033[1m\033[35m"        # (Magenta)
+COLOR_WRITING="\033[1m\033[33m"     # (Yellow)
+NC='\033[0m'                        # (No Color)
 
 # UI messages styled tags
 TAG_ERROR="${COLOR_ERROR}ERROR${NC}"
@@ -41,9 +43,9 @@ TAG_CONNECTING="${COLOR_WAIT}CONNECTING${NC}"
 TAG_CONNECTED="${COLOR_SUCCESS}CONNECTED${NC}"
 TAG_DOWNLOADING="${COLOR_WAIT}DOWNLOADING${NC}"
 TAG_DOWNLOADED="${COLOR_SUCCESS}DOWNLOADED${NC}"
-TAG_EXTRACTING="${COLOR_WAIT}EXTRACTING${NC}"
+TAG_EXTRACTING="${COLOR_TASK}EXTRACTING${NC}"
 TAG_EXTRACTED="${COLOR_SUCCESS}EXTRACTED${NC}"
-TAG_GENERATING="${COLOR_WAIT}GENERATING${NC}"
+TAG_GENERATING="${COLOR_WRITING}GENERATING${NC}"
 TAG_GENERATED="${COLOR_SUCCESS}GENERATED${NC}"
 
 # AirLabs API URL
@@ -55,10 +57,44 @@ XML_PACKAGE_NAME="xml-apis.jar"
 XERCES_PACKAGE_NAME="xercesImpl.jar"
 SAXON_PACKAGE_NAME="saxon9he.jar"
 
-# Query output filepaths
+# Filepaths
 AIRPORTS_OUT_PATH="airports.xml"
 FLIGHTS_OUT_PATH="flights.xml"
 COUNTRIES_OUT_PATH="countries.xml"
+
+XQ_OUT_PATH="flight_data.xml"
+XLST_OUT_PATH="generate_report.xsl"
+
+TEX_OUT_PATH="report.tex"
+DBG_OUT_PATH="debug_html"
+
+### UI Utily functions
+
+function spin {
+    local i=0
+    local sp='/-\|'
+    local n=${#sp}
+    printf ' '
+    sleep 0.1
+    while true; do
+        printf '\b%s' "${sp:i++%n:1}"
+        sleep 0.1
+    done
+}
+
+function hideinput {
+  if [ -t 0 ]; then
+     stty -echo -icanon time 0 min 0
+  fi
+}
+
+function cleanup {
+  if [ -t 0 ]; then
+    stty sane
+  fi
+}
+
+####
 
 # Checks if all required dependencies
 # are installed
@@ -74,16 +110,16 @@ COUNTRIES_OUT_PATH="countries.xml"
 #   Error messages
 function check_environment {
     if ! which java >/dev/null; then
-        printf "${TAG_ERROR}:\tJava not installed\n"
+        printf "${TAG_ERROR}: Java not installed\n"
     fi
     if ! [[ ${CLASSPATH} == *$XML_PACKAGE_NAME* ]]; then
-        printf "${TAG_ERROR}:\tMissing XML APIs. Package $XML_PACKAGE_NAME not found in \$CLASSPATH\n"
+        printf "${TAG_ERROR}: Missing XML APIs. Package $XML_PACKAGE_NAME not found in \$CLASSPATH\n"
     fi
     if ! [[ ${CLASSPATH} == *$XERCES_PACKAGE_NAME* ]]; then
-        printf "${TAG_ERROR}:\tMissing Xerces. Package $XERCES_PACKAGE_NAME not found in \$CLASSPATH\n"
+        printf "${TAG_ERROR}: Missing Xerces. Package $XERCES_PACKAGE_NAME not found in \$CLASSPATH\n"
     fi
     if ! [[ ${CLASSPATH} == *$SAXON_PACKAGE_NAME* ]]; then
-        printf "${TAG_ERROR}:\tMissing Saxon. Package $SAXON_PACKAGE_NAME not found in \$CLASSPATH\n"
+        printf "${TAG_ERROR}: Missing Saxon. Package $SAXON_PACKAGE_NAME not found in \$CLASSPATH\n"
     fi
 }
 
@@ -101,9 +137,12 @@ function check_environment {
 #   Creates and writes output file
 #   from selected database
 function get {
-    printf "${TAG_DOWNLOADING}:\t$1 data...\n"
+    printf "${TAG_DOWNLOADING}: Downloading $1 data...\n"
+    spin & spinpid=$!
     curl "${AIRLABS_URL}$1.$2?api_key=${AIRLABS_API_KEY}" --silent >$3
-    printf "\e[1A\e[K${TAG_DOWNLOADED}:\t$1 data\n"
+    kill "$spinpid"
+    printf "\e[1A\e[K\b${TAG_DOWNLOADED}: Succesfully downloaded $1 data\n"
+    
 }
 
 # Makes all the required requests to
@@ -120,15 +159,15 @@ function get {
 #   Creates and writes flights,
 #   countries and airports .xml files
 function make_request {
-    printf "${TAG_CONNECTING}:\tto AirLabs...\n"
+    printf "${TAG_CONNECTING}: Connecting to \e[4mAirLabs.co\e[0m...\n"
 
     curl ${AIRLABS_URL}/ping?api_key=${AIRLABS_API_KEY} --silent >/dev/null
 
     if [ $? -ne 0 ]; then
-        printf "\e[1A\e[K${TAG_ERROR}:\tCannot connect to AirLabs API\n"
-        
+        printf "\e[1A\e[K${TAG_ERROR}: Cannot connect to \e[4mAirLabs.co\e[0m\n"
+
     else
-        printf "\e[1A\e[K${TAG_CONNECTED}:\tto AirLabs\n"
+        printf "\e[1A\e[K${TAG_CONNECTED}: Succesfully connected to \e[4mAirLabs.co\e[0m\n"
         get flights xml $FLIGHTS_OUT_PATH
         get countries xml $COUNTRIES_OUT_PATH
         get airports xml $AIRPORTS_OUT_PATH
@@ -143,9 +182,11 @@ function make_request {
 # Arguments:
 #   Output file path
 function run_xquery {
-    printf "${TAG_EXTRACTING}:\tflights data\n"
+    printf "${TAG_EXTRACTING}: Running XQuery query to extract flights data...\n"
+    spin & spinpid=$!
     java net.sf.saxon.Query extract_data.xq -TP:$2 >$1
-    printf "\e[1A\e[K${TAG_EXTRACTED}:\tflights data\n"
+    kill "$spinpid"
+    printf "\e[1A\e[K\b${TAG_EXTRACTED}: Flights data extracted\n"
 }
 
 # Executes XSLT transformation
@@ -157,18 +198,46 @@ function run_xquery {
 #   Template file path
 #   Output file path
 function run_xslt {
-    printf "${TAG_GENERATING}:\t.tex file\n"
-    java net.sf.saxon.Transform -s:$1 -xsl:$2 -o:$3 qty=$4 
-    printf "\e[1A\e[K${TAG_GENERATED}:\t.tex file\n"
+    printf "${TAG_GENERATING}: Generating ${TEX_OUT_PATH} file...\n"
+    spin & spinpid=$!
+    java net.sf.saxon.Transform -s:$1 -xsl:$2 -o:$3 qty=$4
+    kill "$spinpid"
+    printf "\e[1A\e[K\b${TAG_GENERATED}: Generated ${TEX_OUT_PATH} file\n"
 }
 
+# Creates a PDF file from .tex generated file
+#
+# Globals:
+#   TEX_OUT_PATH
+# Arguments:
+#   None
+function generate_latex_pdf {
+    printf "${TAG_GENERATING}: Generating PDF file\n"
+    pdflatex $TEX_OUT_PATH >/dev/null
+    printf "\e[1A\e[K\b${TAG_GENERATED}: Generated PDF file\n"
+}
+
+# Deletes the files created by the lastest query
+#
+# Globals:
+#   None
+# Arguments:
+#   None
 function clear_environment {
     rm -f ./flights.xml ./airports.xml ./countries.xml
 }
 
-clear_environment
-check_environment
-make_request
-run_xquery flight_data.xml debug.html
-run_xslt flight_data.xml generate_report.xsl report.tex $1
-# pdflatex report.tex > /dev/null
+trap cleanup EXIT
+trap hideinput CONT
+hideinput
+
+#clear_environment
+#check_environment
+#make_request
+run_xquery $XQ_OUT_PATH $DBG_OUT_PATH
+run_xslt $XQ_OUT_PATH $XLST_OUT_PATH $TEX_OUT_PATH $1
+
+if [ "$2" == "-p" ]; then
+    generate_latex_pdf
+fi
+
