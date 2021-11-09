@@ -15,7 +15,10 @@ declare function local:getCountry($code as element()) as node()? {
         for $c in doc($COUNTRIES_FILE_PATH)//response/response[code = $code]
         return $c[1]/name/text()
     )
-    return <country>{$country}</country>
+    return 
+    if (fn:empty($country))
+    then ()
+    else <country>{$country}</country>
 };
 
 declare function local:getAirport($code as element() , $is_arrival as xs:boolean ) as node()?{
