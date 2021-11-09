@@ -29,11 +29,11 @@
 #
 # Link:
 #    https://en.wikipedia.org/wiki/ANSI_escape_code
-COLOR_ERROR='\033[1m\033[31m'       # (Red)
-COLOR_SUCCESS='\033[1m\033[32m'     # (Green)
-COLOR_WAIT='\033[1m\033[34m'        # (Blue)
-COLOR_TASK="\033[1m\033[35m"        # (Magenta)
-COLOR_WRITING="\033[1m\033[33m"     # (Yellow)
+COLOR_ERROR='\033[1m\033[31m'       # (Bold Red)
+COLOR_SUCCESS='\033[1m\033[32m'     # (Bold Green)
+COLOR_WAIT='\033[1m\033[34m'        # (Bold Blue)
+COLOR_TASK="\033[1m\033[35m"        # (Bold Magenta)
+COLOR_WRITING="\033[1m\033[33m"     # (Bold Yellow)
 NC='\033[0m'                        # (No Color)
 
 # UI messages styled tags
@@ -68,7 +68,7 @@ XLST_OUT_PATH="generate_report.xsl"
 TEX_OUT_PATH="report.tex"
 DBG_OUT_PATH="debug_html"
 
-### UI Utily functions
+### UI Utility functions
 
 function spin {
     local i=0
