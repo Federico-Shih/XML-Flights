@@ -1,68 +1,65 @@
-declare function local:generate_country($flag as element()) as node()*{
-    for $response in doc("countries.xml")//response/response
-    where ($response/code/text() = $flag/text())
-    return 
-        if ( fn:empty($response))
-        then ()
-        else
-            <country>
-                {$response/name/text()}
-            </country>
-
+declare function local:getCountry($code as element()) as node()? {
+    let $country := (
+        for $c in doc("countries.xml")//response/response[code = $code]
+        return $c[1]/name/text()
+    )
+    return <country>{$country}</country>
 };
 
-declare function local:generate_airport($code as element(), $is_arrival as xs:boolean) as node()* {
-    for $response in doc("airports.xml")//response/response
-    where ($response/iata_code/text() = $code/text())
+declare function local:getAirport($code as element() , $is_arrival as xs:boolean ) as node()?{
+    let $airport := (
+        for $a in doc("airports.xml")//response/response[iata_code=$code]
+        where not(fn:empty($a/country_code) or (fn:empty($a/name)))
+        return $a
+    )
     return
-            if ( fn:empty($response))
-            then  ()
-            else 
-                if ($is_arrival = fn:true())
-                    then <arrival_airport> {local:generate_country($response/country_code), $response/name } </arrival_airport>
-                    else <departure_airport> {local:generate_country($response/country_code), $response/name} </departure_airport>
+    if (fn:empty($airport))
+    then()
+    else
+    if ($is_arrival)
+    then <arrival_airport>{local:getCountry($airport[1]/country_code), $airport[1]/name}</arrival_airport>
+    else <departure_airport>{local:getCountry($airport[1]/country_code), $airport[1]/name}</departure_airport>
 };
 
-<flights_data>
+<flights_data xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation= "flights_data.xsd">
 {
-for $flight in doc("flights.xml")//response/response
-order by $flight/hex
+for $flight in doc("flights.xml")/root/response/response
 return
-        <flight>
-        {
-        if (fn:exists($flight/hex))
-            then 
-                attribute id {$flight/hex}
-            else()
-        }
 
-        {
-        if (fn:exists($flight/flag))
+<flight>
+    {
+    if (fn:exists($flight/hex))
         then 
-            local:generate_country($flight/flag)
+        attribute id {$flight/hex}
         else()
-        }
+    }
+    {
+    if(fn:empty($flight/flag))
+    then()
+    else
+    (local:getCountry($flight/flag))
+    }
+    <position>
+        {$flight/lat}
+        {$flight/lng}
+    </position>
+    {$flight/status}
+    {
+    
+    if(fn:empty($flight/dep_iata))
+    then()
+    else
+    local:getAirport($flight/dep_iata, xs:boolean('false'))
+    }
 
-        <position>
-            {$flight/lat}
-            {$flight/lng}
-        </position>
+    {
+    if(fn:empty($flight/arr_iata))
+    then()
+    else
+    local:getAirport($flight/arr_iata, xs:boolean('true'))
+    }
 
-        {$flight/status}
+</flight>
 
-        {
-        if (fn:exists($flight/dep_iata))
-            then 
-                local:generate_airport($flight/dep_iata[position()=1], fn:false())
-            else()
-        }
-        {
-        if (fn:exists($flight/arr_iata))
-            then
-                local:generate_airport($flight/arr_iata[position()=1], fn:true())
-            else()
-        }
-
-    </flight>
 }
 </flights_data>
