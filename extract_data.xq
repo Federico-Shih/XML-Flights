@@ -4,7 +4,7 @@ declare variable $COUNTRIES_FILE_PATH := "countries.xml";
 
 declare variable $MSG_MISSING_API_KEY:= "Missing api_key";
 declare variable $MSG_UNKNOWN_API_KEY := "Unknown api_key";
-declare variable $MSG_CONNECTION_TIMEOUT := "Connection timeout";
+declare variable $MSG_CONNECTION_TIMEOUT := "Connetion timeout";
 
 declare function local:isEmpty($file_path as xs:string) as xs:boolean {
     fn:not(fn:doc-available($file_path))
@@ -49,6 +49,7 @@ declare function local:getAirport($code as element() , $is_arrival as xs:boolean
         <error>{$MSG_UNKNOWN_API_KEY}</error>
     else(
         for $flight in doc($FLIGHTS_FILE_PATH)/root/response/response
+        order by $flight/hex
         return (
             <flight>
 
