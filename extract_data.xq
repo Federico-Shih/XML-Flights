@@ -1,3 +1,6 @@
+declare variable $MISSING_API_KEY := "Missing api_key";
+declare variable $UNKNOWN_API_KEY := "Unknown api_key";
+
 declare function local:getCountry($code as element()) as node()? {
     let $country := (
         for $c in doc("countries.xml")//response/response[code = $code]
@@ -12,54 +15,62 @@ declare function local:getAirport($code as element() , $is_arrival as xs:boolean
         where not(fn:empty($a/country_code) or (fn:empty($a/name)))
         return $a
     )
-    return
-    if (fn:empty($airport))
-    then()
-    else
-    if ($is_arrival)
-    then <arrival_airport>{local:getCountry($airport[1]/country_code), $airport[1]/name}</arrival_airport>
-    else <departure_airport>{local:getCountry($airport[1]/country_code), $airport[1]/name}</departure_airport>
+    return (
+        if (fn:empty($airport)) then ()
+        else
+            if ($is_arrival) then
+                <arrival_airport>{local:getCountry($airport[1]/country_code), $airport[1]/name}</arrival_airport>
+            else 
+                <departure_airport>{local:getCountry($airport[1]/country_code), $airport[1]/name}</departure_airport>
+    )
 };
 
 <flights_data xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation= "flights_data.xsd">
 {
-for $flight in doc("flights.xml")/root/response/response
-return
+    if (fn:not(fn:exists(doc("flights.xml"))) or fn:not(fn:exists(doc("airports.xml"))) or fn:not(fn:exists("countries.xml"))) then
+        <error>{xs:string("Connection timeout")}</error>
+    else if (doc("flights.xml")//message/text() eq $MISSING_API_KEY ) then
+        <error>{$MISSING_API_KEY}</error>
+    else if (doc("flights.xml")//message/text() eq $UNKNOWN_API_KEY ) then
+        <error>{$UNKNOWN_API_KEY}</error>
+    else(
+        for $flight in doc("flights.xml")/root/response/response
+        return (
+            <flight>
 
-<flight>
-    {
-    if (fn:exists($flight/hex))
-        then 
-        attribute id {$flight/hex}
-        else()
-    }
-    {
-    if(fn:empty($flight/flag))
-    then()
-    else
-    (local:getCountry($flight/flag))
-    }
-    <position>
-        {$flight/lat}
-        {$flight/lng}
-    </position>
-    {$flight/status}
-    {
-    
-    if(fn:empty($flight/dep_iata))
-    then()
-    else
-    local:getAirport($flight/dep_iata, xs:boolean('false'))
-    }
+                {
+                    if (fn:exists($flight/hex)) then 
+                        attribute id {$flight/hex}
+                    else()
+                }
 
-    {
-    if(fn:empty($flight/arr_iata))
-    then()
-    else
-    local:getAirport($flight/arr_iata, xs:boolean('true'))
-    }
+                {
+                    if (fn:empty($flight/flag)) then ()
+                    else
+                        local:getCountry($flight/flag)
+                }
 
-</flight>
+                <position>
+                    {$flight/lat}
+                    {$flight/lng}
+                </position>
 
+                {$flight/status}
+
+                {
+                    if (fn:empty($flight/dep_iata)) then()
+                    else
+                        local:getAirport($flight/dep_iata, xs:boolean('false'))
+                }
+
+                {
+                    if(fn:empty($flight/arr_iata)) then ()
+                    else
+                        local:getAirport($flight/arr_iata, xs:boolean('true'))
+                }
+
+            </flight>
+        )
+    )
 }
 </flights_data>
