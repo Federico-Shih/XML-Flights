@@ -5,12 +5,11 @@
     <xsl:template match="/">
 \documentclass[a4paper,10pt]{article}
 \usepackage{booktabs}
-\usepackage{longtable}
 \usepackage{xcolor}
-\usepackage{tabularx}
 
 \definecolor{green}{RGB}{66, 186, 150}
 \definecolor{blue}{RGB}{124, 105, 239}
+\definecolor{orange}{RGB}{252, 171, 40}
 
 \begin{document}
 \title{Flight Report}
@@ -75,7 +74,7 @@
                 \textcolor{blue}{\textbf{en-route}}
             </xsl:when>
             <xsl:when test="$status = 'scheduled'">
-                \textcolor{green}{\textbf{scheduled}}
+                \textcolor{orange}{scheduled}
             </xsl:when>
             <xsl:otherwise>
                 \textcolor{red}{<xsl:value-of select="$status" />}
