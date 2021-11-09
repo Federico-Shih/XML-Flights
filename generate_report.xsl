@@ -35,7 +35,7 @@
 }
 </xsl:if>
 
-<xsl:if test="count(flights_data/flight) > 0 and string(number($qty)) != 'NaN'">
+<xsl:if test="count(flights_data/flight) > 0 and (string(number($qty)) != 'NaN' or not($qty))">
 \hspace{-2.4cm}
 \def\arraystretch{1.5}
 \begin{tabular}{@{} l p{.12\textwidth} p{.18\textwidth} p{.12\textwidth} p{.30\textwidth} p{.30\textwidth} @{}}
