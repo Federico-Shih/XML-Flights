@@ -1,34 +1,8 @@
 #!/bin/bash
 
-### Error information and outputs
-
-# ERROR: Java not installed
-# ERROR: Missing XML APIs. Package xml-apis.jar not found in $CLASSPATH"
-# ERROR: Missing Xerces. Package xercesImpl.jar not found in $CLASSPATH"
-# ERROR: Missing Saxon. Package saxon9he.jar not found in $CLASSPATH"
-#
-# ERROR: Missing API key
-# CURL: (0)
-# XML: <?xml version="1.0" encoding="UTF-8"?><root><error><message>Missing api_key</message><code>wrong_params</code></error><terms>Unauthorized access is prohibited and punishable by law.
-#      Reselling data 'As Is' without AirLabs.Co permission is strictly prohibited.
-#      Full terms on https://airlabs.co/.
-#      Contact us info@airlabs.co</terms></root>
-#
-# ERROR: Invalid API key
-# CURL: (0)
-# XML: <?xml version="1.0" encoding="UTF-8"?><root><error><message>Unknown api_key</message><code>unknown_api_key</code></error><terms>Unauthorized access is prohibited and punishable by law.
-#      Reselling data 'As Is' without AirLabs.Co permission is strictly prohibited.
-#      Full terms on https://airlabs.co/.
-#      Contact us info@airlabs.co</terms></root>
-#
-# ERROR: Connection Timeout
-# CURL: curl: (6) Could not resolve host: airlabs.co
-# XML: Empty
-
 # UI colors in ANSI escape code
 #
-# Link:
-#    https://en.wikipedia.org/wiki/ANSI_escape_code
+# Link: https://en.wikipedia.org/wiki/ANSI_escape_code
 COLOR_ERROR='\033[1m\033[31m'       # (Bold Red)
 COLOR_SUCCESS='\033[1m\033[32m'     # (Bold Green)
 COLOR_WAIT='\033[1m\033[34m'        # (Bold Blue)
@@ -47,25 +21,6 @@ TAG_EXTRACTING="${COLOR_TASK}EXTRACTING${NC}"
 TAG_EXTRACTED="${COLOR_SUCCESS}EXTRACTED${NC}"
 TAG_GENERATING="${COLOR_WRITING}GENERATING${NC}"
 TAG_GENERATED="${COLOR_SUCCESS}GENERATED${NC}"
-
-# AirLabs API URL
-AIRLABS_URL="https://airlabs.co/api/v9/"
-AIRLABS_API_KEY=0ca508c6-95b4-48c7-a35a-702231253f9b
-
-# Dependencies package names
-XERCES_PACKAGE_NAME="xercesImpl.jar"
-SAXON_PACKAGE_NAME="saxon9he.jar"
-
-# Filepaths
-AIRPORTS_OUT_PATH="airports.xml"
-FLIGHTS_OUT_PATH="flights.xml"
-COUNTRIES_OUT_PATH="countries.xml"
-
-XQ_OUT_PATH="flight_data.xml"
-XLST_OUT_PATH="generate_report.xsl"
-
-TEX_OUT_PATH="report.tex"
-DBG_OUT_PATH="debug_html"
 
 ### UI Utility functions
 
@@ -94,6 +49,25 @@ function cleanup {
 
 ####
 
+# AirLabs API URL
+AIRLABS_URL="https://airlabs.co/api/v9/"
+
+# Dependencies package names
+XERCES_PACKAGE_NAME="xercesImpl.jar"
+SAXON_PACKAGE_NAME="saxon9he.jar"
+
+# Filepaths
+AIRPORTS_OUT_PATH="airports.xml"
+FLIGHTS_OUT_PATH="flights.xml"
+COUNTRIES_OUT_PATH="countries.xml"
+
+XQ_OUT_PATH="flight_data.xml"
+XLST_OUT_PATH="generate_report.xsl"
+
+TEX_OUT_PATH="report.tex"
+PDF_OUT_PATH="report.pdf"
+DBG_OUT_PATH="debug.html"
+
 # Checks if all required dependencies
 # are installed
 #
@@ -108,13 +82,13 @@ function cleanup {
 #   Error messages
 function check_environment {
     if ! which java >/dev/null; then
-        printf "${TAG_ERROR}: Java not installed\n"
+        printf "${TAG_ERROR}: Java is not installed.\n"
     fi
     if ! [[ ${CLASSPATH} == *$XERCES_PACKAGE_NAME* ]]; then
-        printf "${TAG_ERROR}: Missing Xerces. Package $XERCES_PACKAGE_NAME not found in \$CLASSPATH\n"
+        printf "${TAG_ERROR}: Missing Xerces. Package $XERCES_PACKAGE_NAME not found in \$CLASSPATH.\n"
     fi
     if ! [[ ${CLASSPATH} == *$SAXON_PACKAGE_NAME* ]]; then
-        printf "${TAG_ERROR}: Missing Saxon. Package $SAXON_PACKAGE_NAME not found in \$CLASSPATH\n"
+        printf "${TAG_ERROR}: Missing Saxon. Package $SAXON_PACKAGE_NAME not found in \$CLASSPATH.\n"
     fi
 }
 
@@ -137,8 +111,7 @@ function get {
     curl "${AIRLABS_URL}$1.$2?api_key=${AIRLABS_API_KEY}" --silent >$3
     kill "$show_spinner_pid"
     wait "$show_spinner_pid" 2> /dev/null
-    printf "\e[1A\e[K\b${TAG_DOWNLOADED}: Succesfully downloaded $1 data\n"
-    
+    printf "\e[1A\e[K\b${TAG_DOWNLOADED}: Succesfully downloaded $1 data.\n"
 }
 
 # Makes all the required requests to
@@ -160,7 +133,7 @@ function make_request {
     curl ${AIRLABS_URL}/ping?api_key=${AIRLABS_API_KEY} --silent >/dev/null
 
     if [ $? -ne 0 ]; then
-        printf "\e[1A\e[K${TAG_ERROR}: Cannot connect to \e[4mAirLabs.co\e[0m\n"
+        printf "\e[1A\e[K${TAG_ERROR}: Cannot connect to \e[4mAirLabs.co\e[0m.\n"
 
     else
         printf "\e[1A\e[K${TAG_CONNECTED}: Succesfully connected to \e[4mAirLabs.co\e[0m\n"
@@ -168,7 +141,6 @@ function make_request {
         get countries xml $COUNTRIES_OUT_PATH
         get airports xml $AIRPORTS_OUT_PATH
     fi
-
 }
 
 # Executes XQuery query
@@ -183,7 +155,7 @@ function run_xquery {
     java net.sf.saxon.Query extract_data.xq -TP:$2 &>/dev/null >$1 
     kill "$show_spinner_pid"
     wait "$show_spinner_pid" 2> /dev/null
-    printf "\e[1A\e[K\b${TAG_EXTRACTED}: Flights data extracted\n"
+    printf "\e[1A\e[K\b${TAG_EXTRACTED}: Flights data extracted.\n"
 }
 
 # Executes XSLT transformation
@@ -200,7 +172,7 @@ function run_xslt {
     java net.sf.saxon.Transform -s:$1 -xsl:$2 -o:$3 qty=$4 &>/dev/null
     kill "$show_spinner_pid" 
     wait "$show_spinner_pid" 2> /dev/null
-    printf "\e[1A\e[K\b${TAG_GENERATED}: Generated ${TEX_OUT_PATH} file\n"
+    printf "\e[1A\e[K\b${TAG_GENERATED}: Generated ${TEX_OUT_PATH} file.\n"
 }
 
 # Creates a PDF file from .tex generated file
@@ -210,9 +182,13 @@ function run_xslt {
 # Arguments:
 #   None
 function generate_latex_pdf {
-    printf "${TAG_GENERATING}: Generating PDF file\n"
-    pdflatex $TEX_OUT_PATH >/dev/null
-    printf "\e[1A\e[K\b${TAG_GENERATED}: Generated PDF file\n"
+    if ! which pdflatex >/dev/null; then
+        printf "${TAG_ERROR}: Cannot generate PDF file. Pdflatex is not installed.\n"
+    else
+        printf "${TAG_GENERATING}: Generating PDF file...\n"
+        pdflatex $TEX_OUT_PATH >/dev/null
+        printf "\e[1A\e[K\b${TAG_GENERATED}: Generated PDF file.\n"
+    fi
 }
 
 # Deletes the files created by the lastest query
@@ -222,7 +198,7 @@ function generate_latex_pdf {
 # Arguments:
 #   None
 function clear_environment {
-    rm -f ./flights.xml ./airports.xml ./countries.xml ./debug.html
+    rm -f $FLIGHTS_OUT_PATH $AIRPORTS_OUT_PATH $COUNTRIES_OUT_PATH $DBG_OUT_PATH $TEX_OUT_PATH $PDF_OUT_PATH $XQ_OUT_PATH
 }
 
 #### Disables user input while code is running
@@ -233,13 +209,25 @@ hideinput
 
 ####
 
+if [ -z ${AIRLABS_API_KEY} ]; then
+    printf "${TAG_ERROR}: AIRLABS_API_KEY environment variable not found.\n"
+    exit
+fi
+
+if [ $# -gt 0 ] && [ $1 -le 0 ] &> /dev/null; then
+    printf "${TAG_ERROR}: Invalid argument. QTY must be positive number.\n"
+    exit
+fi   
+
 clear_environment
 check_environment
 make_request
 run_xquery $XQ_OUT_PATH $DBG_OUT_PATH
 run_xslt $XQ_OUT_PATH $XLST_OUT_PATH $TEX_OUT_PATH $1
 
-if [ "$2" == "-p" ]; then
+if [ $2 == "-p" ] &> /dev/null;  then
     generate_latex_pdf
 fi
+
+exit 0
 
