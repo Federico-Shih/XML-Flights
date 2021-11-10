@@ -6,6 +6,7 @@
 \documentclass[a4paper,10pt]{article}
 \usepackage{booktabs}
 \usepackage{xcolor}
+\usepackage{longtable}
 
 \definecolor{green}{RGB}{66, 186, 150}
 \definecolor{blue}{RGB}{124, 105, 239}
@@ -35,9 +36,9 @@
 </xsl:if>
 
 <xsl:if test="count(flights_data/flight) > 0 and (string(number($qty)) != 'NaN' or not($qty))">
-\hspace{-2.4cm}
+\setlength\LTleft{-2cm}
 \def\arraystretch{1.5}
-\begin{tabular}{@{} l p{.12\textwidth} p{.18\textwidth} p{.18\textwidth} p{.30\textwidth} p{.30\textwidth} @{}}
+\begin{longtable}{@{} l p{.12\textwidth} p{.16\textwidth} p{.14\textwidth} p{.30\textwidth} p{.30\textwidth} @{}}
     \toprule
     \textbf{Flight ID} &amp; \textbf{Country} &amp; \textbf{Position} &amp; \textbf{Status} &amp; \textbf{Departure Airport} &amp; \textbf{Arrival Airport}\\
     \midrule\midrule
@@ -54,7 +55,7 @@
         </xsl:choose>
     </xsl:for-each>
     \bottomrule
-\end{tabular}
+\end{longtable}
 </xsl:if>
 \end{document}
 
