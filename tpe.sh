@@ -53,7 +53,6 @@ AIRLABS_URL="https://airlabs.co/api/v9/"
 AIRLABS_API_KEY=0ca508c6-95b4-48c7-a35a-702231253f9b
 
 # Dependencies package names
-XML_PACKAGE_NAME="xml-apis.jar"
 XERCES_PACKAGE_NAME="xercesImpl.jar"
 SAXON_PACKAGE_NAME="saxon9he.jar"
 
@@ -70,14 +69,13 @@ DBG_OUT_PATH="debug_html"
 
 ### UI Utility functions
 
-function spin {
+function show_spinner {
     local i=0
     local sp='/-\|'
-    local n=${#sp}
-    printf ' '
+    local s=${#sp}
     sleep 0.1
     while true; do
-        printf '\b%s' "${sp:i++%n:1}"
+        printf '\b%s' "${sp:i++%s:1}"
         sleep 0.1
     done
 }
@@ -112,9 +110,6 @@ function check_environment {
     if ! which java >/dev/null; then
         printf "${TAG_ERROR}: Java not installed\n"
     fi
-    if ! [[ ${CLASSPATH} == *$XML_PACKAGE_NAME* ]]; then
-        printf "${TAG_ERROR}: Missing XML APIs. Package $XML_PACKAGE_NAME not found in \$CLASSPATH\n"
-    fi
     if ! [[ ${CLASSPATH} == *$XERCES_PACKAGE_NAME* ]]; then
         printf "${TAG_ERROR}: Missing Xerces. Package $XERCES_PACKAGE_NAME not found in \$CLASSPATH\n"
     fi
@@ -138,9 +133,10 @@ function check_environment {
 #   from selected database
 function get {
     printf "${TAG_DOWNLOADING}: Downloading $1 data...\n"
-    spin & spinpid=$!
+    show_spinner & show_spinner_pid=$!
     curl "${AIRLABS_URL}$1.$2?api_key=${AIRLABS_API_KEY}" --silent >$3
-    kill "$spinpid"
+    kill "$show_spinner_pid"
+    wait "$show_spinner_pid" 2> /dev/null
     printf "\e[1A\e[K\b${TAG_DOWNLOADED}: Succesfully downloaded $1 data\n"
     
 }
@@ -183,9 +179,10 @@ function make_request {
 #   Output file path
 function run_xquery {
     printf "${TAG_EXTRACTING}: Running XQuery query to extract flights data...\n"
-    spin & spinpid=$!
-    java net.sf.saxon.Query extract_data.xq -TP:$2 >$1
-    kill "$spinpid"
+    show_spinner & show_spinner_pid=$!
+    java net.sf.saxon.Query extract_data.xq -TP:$2 >$1 &>/dev/null
+    kill "$show_spinner_pid"
+    wait "$show_spinner_pid" 2> /dev/null
     printf "\e[1A\e[K\b${TAG_EXTRACTED}: Flights data extracted\n"
 }
 
@@ -199,9 +196,10 @@ function run_xquery {
 #   Output file path
 function run_xslt {
     printf "${TAG_GENERATING}: Generating ${TEX_OUT_PATH} file...\n"
-    spin & spinpid=$!
-    java net.sf.saxon.Transform -s:$1 -xsl:$2 -o:$3 qty=$4
-    kill "$spinpid"
+    show_spinner & show_spinner_pid=$!
+    java net.sf.saxon.Transform -s:$1 -xsl:$2 -o:$3 qty=$4 &>/dev/null
+    kill "$show_spinner_pid" 
+    wait "$show_spinner_pid" 2> /dev/null
     printf "\e[1A\e[K\b${TAG_GENERATED}: Generated ${TEX_OUT_PATH} file\n"
 }
 
@@ -224,7 +222,7 @@ function generate_latex_pdf {
 # Arguments:
 #   None
 function clear_environment {
-    rm -f ./flights.xml ./airports.xml ./countries.xml
+    rm -f ./flights.xml ./airports.xml ./countries.xml ./debug.html
 }
 
 #### Disables user input while code is running
