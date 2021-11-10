@@ -180,7 +180,7 @@ function make_request {
 function run_xquery {
     printf "${TAG_EXTRACTING}: Running XQuery query to extract flights data...\n"
     show_spinner & show_spinner_pid=$!
-    java net.sf.saxon.Query extract_data.xq -TP:$2 >$1 &>/dev/null
+    java net.sf.saxon.Query extract_data.xq -TP:$2 &>/dev/null >$1 
     kill "$show_spinner_pid"
     wait "$show_spinner_pid" 2> /dev/null
     printf "\e[1A\e[K\b${TAG_EXTRACTED}: Flights data extracted\n"
